@@ -367,7 +367,7 @@ int main() {
 				}
 			} else if (ch == KEY_LEFT) {
 				if (cursor_x + left_col == 0) {
-					if (cursor_y != 0) {
+					if (cursor_y + top_row != 0) {
 						int pos = pos_to_index(file_content, cursor_y + top_row, 0);
 						position behind_pos = index_to_pos(file_content, pos - 1);
 						cursor_x = behind_pos.x == 0 ? 0 : behind_pos.x + 1;
@@ -375,14 +375,16 @@ int main() {
 							left_col = cursor_x - cursor_x % getmaxx(editor);
 							cursor_x = cursor_x % getmaxx(editor);
 						}
-						cursor_y--;
+						if (cursor_y == 0) top_row--;
+						else cursor_y--;
 					}
 				} else if (cursor_x == 0) left_col--;
 				else cursor_x--;
 			} else if (ch == KEY_RIGHT) {
 				if (pos_to_index(file_content, cursor_y + top_row, left_col + cursor_x) == strlen(file_content)-1) ;
 				else if (*(file_content + pos_to_index(file_content, cursor_y + top_row, left_col + cursor_x) + 1) == '\n') {
-					cursor_y++;
+					if (cursor_y == getmaxy(editor)-1) top_row++;
+					else cursor_y++;
 					cursor_x = 0;
 					left_col = 0;
 				}
