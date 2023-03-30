@@ -87,15 +87,14 @@ char *insert_ch(char *str, char ch, int line, int col) {
 char *delete_ch(char *str, int line, int col) {
 	if (line + col == 0) return str;
 	char *buf = malloc(strlen(str));
-	int i = 0;
+	int pos = 0;
 	int current_line = 0;
 	while (current_line < line) {
-		if (*(str + i) == '\n') current_line++;
-		i++;
+		if (*(str + pos) == '\n') current_line++;
+		pos++;
 	}
-	i += col;
-	strncpy(buf, str, i);
-	strcpy(buf+i-1,str+i);
+	pos += col;
+	
 	return buf;
 }
 
