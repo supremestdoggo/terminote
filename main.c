@@ -216,7 +216,8 @@ int draw_options_row(WINDOW *options, char *option_keybinds[], char *option_desc
 
 int main() {
 	// initialize path
-	chdir(pathcat(getenv("HOME"), "/.terminote"));
+	chdir(getenv("HOME"));
+	chdir(".terminote");
 	// initialize files
 	chdir("notes");
 	DIR *d;
@@ -247,7 +248,7 @@ int main() {
 	char *file_content = read_file(files[0]);
 	char *note_name;
 	int cursor_pos, shift, scroll, cursor_y, cursor_x, top_row, left_col, add_x, add_left;
-	cursor_pos = shift = scroll = cursor_y = cursor_x = top_row = left_col;
+	cursor_pos = shift = scroll = cursor_y = cursor_x = top_row = left_col = 0;
 	WINDOW *sidebar = init_sidebar();
 	WINDOW *editor = init_editor();
 	WINDOW *options = init_options();
