@@ -335,9 +335,8 @@ int main() {
 						}
 						new_cursor_y--;
 					}
-				} else if (cursor_x == 0) {
-					left_col--;
-				} else new_cursor_x--;
+				} else if (cursor_x == 0) left_col--;
+				else new_cursor_x--;
 
 				file_content = delete_ch(file_content, cursor_y + top_row, cursor_x + left_col);
 
@@ -382,7 +381,7 @@ int main() {
 				else cursor_x--;
 			} else if (ch == KEY_RIGHT) {
 				if (pos_to_index(file_content, cursor_y + top_row, left_col + cursor_x) == strlen(file_content)-1) ;
-				else if (index_to_pos(file_content, pos_to_index(file_content, cursor_y, left_col + cursor_x)+1).y != cursor_y) {
+				else if (*(file_content + pos_to_index(file_content, cursor_y, left_col + cursor_x) + 1) == '\n') {
 					cursor_y++;
 					cursor_x = 0;
 					left_col = 0;
