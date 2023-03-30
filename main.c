@@ -318,14 +318,14 @@ int main() {
 			ch = wgetch(sidebar);
 			if (ch == '\n' || ch == KEY_ENTER) {
 				file_content = insert_ch(file_content, '\n', cursor_y + top_row, cursor_x + left_col);
-				cursor_y++;
+				if (cursor_y == getmaxy(editor)-1) top_row++;
+				else cursor_y++;
 				cursor_x = 0;
 				left_col = 0;
 			} else if (ch == KEY_BACKSPACE || ch == KEY_DC || ch == 127) {
 				int new_cursor_x = cursor_x;
-				int new_cursor_y = cursor_y;
 				if (cursor_x + left_col == 0) {
-					if (cursor_y != 0) {
+					if (cursor_y + top_row != 0) {
 						int pos = pos_to_index(file_content, cursor_y + top_row, 0);
 						position behind_pos = index_to_pos(file_content, pos - 1);
 						new_cursor_x = behind_pos.x == 0 ? 0 : behind_pos.x + 1;
@@ -333,7 +333,8 @@ int main() {
 							left_col = new_cursor_x - new_cursor_x % getmaxx(editor);
 							new_cursor_x = new_cursor_x % getmaxx(editor);
 						}
-						new_cursor_y--;
+						if (cursor_y == 0) top_row--;
+						else cursor_y--;
 					}
 				} else if (cursor_x == 0) left_col--;
 				else new_cursor_x--;
@@ -341,7 +342,6 @@ int main() {
 				file_content = delete_ch(file_content, cursor_y + top_row, cursor_x + left_col);
 
 				cursor_x = new_cursor_x;
-				cursor_y = new_cursor_y;
 			} else if (ch == KEY_RESIZE) {
 				endwin();
 				refresh();
@@ -381,7 +381,7 @@ int main() {
 				else cursor_x--;
 			} else if (ch == KEY_RIGHT) {
 				if (pos_to_index(file_content, cursor_y + top_row, left_col + cursor_x) == strlen(file_content)-1) ;
-				else if (*(file_content + pos_to_index(file_content, cursor_y, left_col + cursor_x) + 1) == '\n') {
+				else if (*(file_content + pos_to_index(file_content, cursor_y + top_row, left_col + cursor_x) + 1) == '\n') {
 					cursor_y++;
 					cursor_x = 0;
 					left_col = 0;
