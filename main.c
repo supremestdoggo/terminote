@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <limits.h>
+#include <stdbool.h>
 
 const double phi = 1.61803398875;
 
@@ -84,17 +85,34 @@ char *insert_ch(char *str, char ch, int line, int col) {
 	return buf;
 }
 
+char *insert_ch_pos(char *str, char ch, int pos) {
+	char *buf = malloc(strlen(str) + 2);
+	strncpy(buf, str, pos);
+	*(buf + pos) = ch;
+	strcpy(buf+pos+1, str+pos);
+	return buf;
+}
+
 char *delete_ch(char *str, int line, int col) {
 	if (line + col == 0) return str;
 	char *buf = malloc(strlen(str));
-	int pos = 0;
+	int i = 0;
 	int current_line = 0;
 	while (current_line < line) {
-		if (*(str + pos) == '\n') current_line++;
-		pos++;
+		if (*(str + i) == '\n') current_line++;
+		i++;
 	}
-	pos += col;
-	
+	i += col;
+	strncpy(buf, str, i);
+	strcpy(buf+i-1,str+i);
+	return buf;
+}
+
+char *delete_ch_pos(char *str, int pos) {
+	if (pos == 0) return str;
+	char *buf = malloc(strlen(str));
+	strncpy(buf, str, pos);
+	strcpy(buf+pos-1,str+pos);
 	return buf;
 }
 
@@ -213,6 +231,27 @@ int draw_options_row(WINDOW *options, char *option_keybinds[], char *option_desc
 	return 0;
 }
 
+bool is_str_not_in_arr(char **strings, char *string, int stringsc) {
+	for (int i = 0; i < stringsc; i++) {
+		if (strcmp(*(strings + i), string) == 0) return false;
+	}
+	return true;
+}
+
+void print_row_scroll(char *str, int cursor_pos, int scroll, int width) {
+	int x = getcurx(stdscr);
+	addnstr(str + scroll, width);
+	curs_set(2);
+	move(getcury(stdscr), x + cursor_pos);
+	refresh();
+}
+
+char **append_str(char **strings, char *string, int stringsc) {
+	char **ret = realloc(strings, (stringsc + 1) * sizeof(char*));
+	*(ret + stringsc) = string;
+	return ret;
+}
+
 int main() {
 	// initialize path
 	chdir(getenv("HOME"));
@@ -246,7 +285,7 @@ int main() {
 	keypad(stdscr, TRUE);
 	char *file_content = read_file(files[0]);
 	char *note_name;
-	int cursor_pos, shift, scroll, cursor_y, cursor_x, top_row, left_col, add_x, add_left;
+	int cursor_pos, shift, scroll, cursor_y, cursor_x, top_row, left_col;
 	cursor_pos = shift = scroll = cursor_y = cursor_x = top_row = left_col = 0;
 	WINDOW *sidebar = init_sidebar();
 	WINDOW *editor = init_editor();
@@ -256,13 +295,20 @@ int main() {
 	int ch, old_ch, choice, old_choice;
 	old_ch = old_choice = 0;
 
-	char *shortcut_keys[] = {"^X"};
-	char *shortcut_descriptions[] = {"Exits terminote"};
+	char *shortcut_keys[] = {"^A", "^X"};
+	char *shortcut_descriptions[] = {"Creates a new note", "Exits terminote"};
+
+	bool focus_change = false;
 
 	while (1) {
 		clear();
+		if (focus_change) {
+			focus_change = false;
+			if (focus == EDITOR) shortcut_descriptions[1] = "Exits editor";
+			else shortcut_descriptions[1] = "Exits terminote";
+		}
 		curs_set(0);
-		if (draw_options_row(options, shortcut_keys, shortcut_descriptions, 1, 1) != 0) {
+		if (draw_options_row(options, shortcut_keys, shortcut_descriptions, 2, 1) != 0) {
 			endwin();
 		} else {
 			mvwhline(options, 0, 0, 0, getmaxx(options));
@@ -289,6 +335,7 @@ int main() {
 				if (shift + cursor_pos != filesc-1) scroll = 0;
 			} else if (ch == '\n' || ch == KEY_ENTER) {
 				focus = EDITOR;
+				focus_change = true;
 				// visual cue
 				draw_editor(editor, "", cursor_y, cursor_x, top_row, left_col, 0);
 				usleep(VISCUE_WAIT);
@@ -352,9 +399,10 @@ int main() {
 				sidebar = init_sidebar();
 				editor = init_editor();
 				options = init_options();
-			} else if (ch < KEY_MIN && old_ch != KEY_RESIZE) {
+			} else if (ch < KEY_MIN && old_ch != KEY_RESIZE && ch != 1) {
 				if (ch == 24) {
 					focus = SIDEBAR;
+					focus_change = true;
 					overwrite_file(files[choice], file_content);
 					cursor_y = cursor_x = top_row = left_col = 0;
 					// visual cue
@@ -391,6 +439,61 @@ int main() {
 				else if (cursor_x == getmaxx(editor)-1) left_col++;
 				else cursor_x++;
 			}
+		}
+		if (ch == 1) {
+			clear();
+			delwin(sidebar);
+			delwin(editor);
+			delwin(options);
+			refresh();
+			note_name = strdup("");
+			int add_pos = 0;
+			int add_scroll = 0;
+			int old_add_ch = 0;
+			while (1) {
+				clear();
+				refresh();
+				if (getmaxx(stdscr) < 13) {
+					endwin();
+				} else {
+					mvprintw(0, 0, "Note name: ");
+					int row_width = getmaxx(stdscr)-12;
+					print_row_scroll(note_name, add_pos, add_scroll, row_width);
+					int add_ch = getch();
+					if (add_ch == '\n' || add_ch == KEY_ENTER) {
+						if (is_str_not_in_arr(files, note_name, filesc)) {
+							files = append_str(files, note_name, filesc);
+							filesc++;
+							fclose(fopen(note_name, "a"));
+							break;
+						}
+					} else if (add_ch == KEY_LEFT) {
+						if (add_scroll + add_pos != 0) {
+							if (add_pos == 0) add_scroll--;
+							else add_pos--;
+						}
+					} else if (add_ch == KEY_RIGHT) {
+						if (add_scroll + add_pos != strlen(note_name)) {
+							if (add_pos == row_width-1) add_scroll++;
+							else add_pos++;
+						}
+					} else if (add_ch == KEY_BACKSPACE || add_ch == KEY_DC || add_ch == 127) {
+						if (add_scroll + add_pos != 0) {
+							note_name = delete_ch_pos(note_name, add_scroll + add_pos);
+							if (add_pos == 0) add_scroll--;
+							else add_pos--;
+						}
+					} else if (add_ch < KEY_MIN && old_add_ch != KEY_RESIZE) {
+						note_name = insert_ch_pos(note_name, add_ch, add_scroll + add_pos);
+						if (add_pos == row_width-1) add_scroll++;
+						else add_pos++;
+					}
+					old_add_ch = add_ch;
+				}
+			}
+			sidebar = init_sidebar();
+			editor = init_editor();
+			options = init_options();
 		}
 		old_ch = ch;
 	}
