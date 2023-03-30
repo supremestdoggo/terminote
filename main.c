@@ -317,7 +317,7 @@ int main() {
 		} else if (focus == EDITOR) {
 			ch = wgetch(sidebar);
 			if (ch == '\n' || ch == KEY_ENTER) {
-				file_content = insert_ch(file_content, '\n', cursor_y, cursor_x + left_col);
+				file_content = insert_ch(file_content, '\n', cursor_y + top_row, cursor_x + left_col);
 				cursor_y++;
 				cursor_x = 0;
 				left_col = 0;
@@ -326,7 +326,7 @@ int main() {
 				int new_cursor_y = cursor_y;
 				if (cursor_x + left_col == 0) {
 					if (cursor_y != 0) {
-						int pos = pos_to_index(file_content, cursor_y, 0);
+						int pos = pos_to_index(file_content, cursor_y + top_row, 0);
 						position behind_pos = index_to_pos(file_content, pos - 1);
 						new_cursor_x = behind_pos.x == 0 ? 0 : behind_pos.x + 1;
 						if (new_cursor_x > getmaxx(editor)-1) {
@@ -339,7 +339,7 @@ int main() {
 					left_col--;
 				} else new_cursor_x--;
 
-				file_content = delete_ch(file_content, cursor_y, cursor_x + left_col);
+				file_content = delete_ch(file_content, cursor_y + top_row, cursor_x + left_col);
 
 				cursor_x = new_cursor_x;
 				cursor_y = new_cursor_y;
@@ -362,14 +362,14 @@ int main() {
 					draw_sidebar(sidebar, 0, NULL, 0, 0, 0, scroll);
 					usleep(VISCUE_WAIT);
 				} else {
-					file_content = insert_ch(file_content, ch, cursor_y, cursor_x + left_col);
+					file_content = insert_ch(file_content, ch, cursor_y + top_row, cursor_x + left_col);
 					if (cursor_x != getmaxx(editor)-1) cursor_x++;
 					else left_col++;
 				}
 			} else if (ch == KEY_LEFT) {
 				if (cursor_x + left_col == 0) {
 					if (cursor_y != 0) {
-						int pos = pos_to_index(file_content, cursor_y, 0);
+						int pos = pos_to_index(file_content, cursor_y + top_row, 0);
 						position behind_pos = index_to_pos(file_content, pos - 1);
 						cursor_x = behind_pos.x == 0 ? 0 : behind_pos.x + 1;
 						if (cursor_x > getmaxx(editor)-1) {
@@ -381,9 +381,9 @@ int main() {
 				} else if (cursor_x == 0) left_col--;
 				else cursor_x--;
 			} else if (ch == KEY_RIGHT) {
-				if (pos_to_index(file_content, cursor_y, left_col + cursor_x) == strlen(file_content)-1) ;
+				if (pos_to_index(file_content, cursor_y + top_row, left_col + cursor_x) == strlen(file_content)-1) ;
 				else if (index_to_pos(file_content, pos_to_index(file_content, cursor_y, left_col + cursor_x)+1).y != cursor_y) {
-					cursor_y = index_to_pos(file_content, pos_to_index(file_content, cursor_y, left_col + cursor_x)+1).y;
+					cursor_y++;
 					cursor_x = 0;
 					left_col = 0;
 				}
