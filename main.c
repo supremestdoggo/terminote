@@ -126,7 +126,7 @@ typedef struct {
 position index_to_pos(char *str, int index) {
 	int line, col;
 	line = col = 0;
-	for (int i = 0; i < index; i++) {
+	for (int i = 0; i <= index; i++) {
 		if (*(str + i) == '\n') {
 			line++;
 			col = 0;
