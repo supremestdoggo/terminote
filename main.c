@@ -296,6 +296,9 @@ int main() {
 
 	fputs("\x1B[2JScreen is too small", stdout);
     initscr();
+	if (has_colors()) start_color();
+	if (has_colors()) use_default_colors();
+	if (has_colors()) init_pair(1, COLOR_RED, -1);
 	clear();
 	noecho();
 	cbreak();
@@ -423,7 +426,7 @@ int main() {
 						if (cursor_x != getmaxx(editor)-1) cursor_x++;
 						else left_col++;
 					}
-			} else if (ch < KEY_MIN && old_ch != KEY_RESIZE && ch != 1) {
+			} else if (ch < KEY_MIN && old_ch != KEY_RESIZE && ch != 1 && ch != 18) {
 				if (ch == 24) {
 					focus = SIDEBAR;
 					focus_change = true;
@@ -464,6 +467,7 @@ int main() {
 				else cursor_x++;
 			}
 		}
+		// Add note
 		if (ch == 1) {
 			clear();
 			delwin(sidebar);
@@ -474,16 +478,27 @@ int main() {
 			int add_pos = 0;
 			int add_scroll = 0;
 			int old_add_ch = 0;
+			bool is_invalid = false;
 			while (1) {
-				clear();
-				refresh();
-				if (getmaxx(stdscr) < 13) {
+				if (getmaxx(stdscr) < 20 || getmaxy(stdscr) < 4) {
 					endwin();
 				} else {
-					mvprintw(0, 0, "Note name: ");
+					clear();
+					refresh();
+					attron(A_REVERSE);
+					mvaddstr(3, 0, "^X");
+					attroff(A_REVERSE);
+					addstr(" Exit prompt");
+					if (is_invalid) {
+						if (has_colors()) attron(COLOR_PAIR(1));
+						mvaddstr(1, 0, "Note already exists");
+						if (has_colors()) attroff(COLOR_PAIR(1));
+					}
+					mvaddstr(0, 0, "Note name: ");
 					int row_width = getmaxx(stdscr)-12;
 					print_row_scroll(note_name, add_pos, add_scroll, row_width);
 					int add_ch = getch();
+					is_invalid = false;
 					if (add_ch == '\n' || add_ch == KEY_ENTER) {
 						if (is_str_not_in_arr(files, note_name, filesc)) {
 							files = append_str(files, note_name, filesc);
@@ -507,12 +522,15 @@ int main() {
 							if (add_pos == 0) add_scroll--;
 							else add_pos--;
 						}
+					} else if (add_ch == 24) {
+						break;
 					} else if (add_ch < KEY_MIN && old_add_ch != KEY_RESIZE) {
 						note_name = insert_ch_pos(note_name, add_ch, add_scroll + add_pos);
 						if (add_pos == row_width-1) add_scroll++;
 						else add_pos++;
 					}
 					old_add_ch = add_ch;
+					if (!is_str_not_in_arr(files, note_name, filesc)) is_invalid = true;
 				}
 			}
 			sidebar = init_sidebar();
