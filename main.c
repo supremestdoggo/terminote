@@ -399,6 +399,13 @@ int main() {
 				sidebar = init_sidebar();
 				editor = init_editor();
 				options = init_options();
+			} else if (ch == '\t' || ch == KEY_STAB) {
+					// Convert tabs to spaces because it's the easiest way to go about handling tabs
+					for (int i = 0; i < TABSIZE; i++) {
+						file_content = insert_ch(file_content, ' ', cursor_y + top_row, cursor_x + left_col);
+						if (cursor_x != getmaxx(editor)-1) cursor_x++;
+						else left_col++;
+					}
 			} else if (ch < KEY_MIN && old_ch != KEY_RESIZE && ch != 1) {
 				if (ch == 24) {
 					focus = SIDEBAR;
