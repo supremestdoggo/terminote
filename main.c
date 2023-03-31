@@ -14,8 +14,8 @@ const char default_note_content[] = "Hello! This note is created when you first 
 "the sidebar, use the up and down arrow keys. If \n"
 "a note's title is too long for the sidebar to \n"
 "show, you can use the left and right arrow keys \n"
-"to scroll through the text. If you've chosen a \n"
-"note, press enter to open it in the editor.";
+"to scroll through the text. Once you've chosen a \n"
+"note, press ENTER to open it in the editor.";
 
 #define VISCUE_WAIT 250000
 
