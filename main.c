@@ -9,6 +9,14 @@
 
 const double phi = 1.61803398875;
 
+const char default_note_content[] = "Hello! This note is created when you first run \n"
+"terminote. To scroll through note options within \n"
+"the sidebar, use the up and down arrow keys. If \n"
+"a note's title is too long for the sidebar to \n"
+"show, you can use the left and right arrow keys \n"
+"to scroll through the text. If you've chosen a \n"
+"note, press enter to open it in the editor.";
+
 #define VISCUE_WAIT 250000
 
 typedef enum {SIDEBAR, EDITOR} focus_state;
@@ -156,6 +164,7 @@ void overwrite_file(char *path, char *content) {
 	truncate(path, strlen(content));
 	FILE *file = fopen(path, "w");
 	fputs(content,file);
+	fflush(file);
 	fclose(file);
 }
 
@@ -260,6 +269,7 @@ int main() {
 	chdir("notes");
 	DIR *d;
   	struct dirent *dir;
+	start:
   	d = opendir(".");
 	int filesc = 0;
     while ((dir = readdir(d)) != NULL) {
@@ -267,6 +277,13 @@ int main() {
         	filesc++;
     	}
     }
+	if (filesc == 0) {
+		FILE *default_note = fopen("note", "w");
+		fputs(default_note_content, default_note);
+		fflush(default_note);
+		fclose(default_note);
+		goto start;
+	}
     rewinddir(d);
 	char **files = malloc(filesc * sizeof(char*));
 	int i = 0;
