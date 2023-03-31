@@ -315,8 +315,9 @@ int main() {
 	int ch, old_ch, choice, old_choice;
 	old_ch = old_choice = 0;
 
-	char *shortcut_keys[] = {"^A", "^X"};
-	char *shortcut_descriptions[] = {"Creates a new note", "Exits terminote"};
+	const int shortcuts = 3;
+	char *shortcut_keys[shortcuts] = {"^A", "^R", "^X"};
+	char *shortcut_descriptions[shortcuts] = {"Add note", "Rename note", "Exit terminote"};
 
 	bool focus_change = false;
 
@@ -328,7 +329,7 @@ int main() {
 			else shortcut_descriptions[1] = "Exits terminote";
 		}
 		curs_set(0);
-		if (draw_options_row(options, shortcut_keys, shortcut_descriptions, 2, 1) != 0) {
+		if (draw_options_row(options, shortcut_keys, shortcut_descriptions, shortcuts, 1) != 0) {
 			endwin();
 		} else {
 			mvwhline(options, 0, 0, 0, getmaxx(options));
@@ -531,6 +532,77 @@ int main() {
 					}
 					old_add_ch = add_ch;
 					if (!is_str_not_in_arr(files, note_name, filesc)) is_invalid = true;
+				}
+			}
+			sidebar = init_sidebar();
+			editor = init_editor();
+			options = init_options();
+		}
+		// Rename note
+		if (ch == 18) {
+			clear();
+			delwin(sidebar);
+			delwin(editor);
+			delwin(options);
+			refresh();
+			note_name = strdup("");
+			int add_pos = 0;
+			int add_scroll = 0;
+			int old_add_ch = 0;
+			enum {INVALID, EMPTY, NONE} error_state = NONE;
+			while (1) {
+				if (getmaxx(stdscr) < 20 || getmaxy(stdscr) < 4) {
+					endwin();
+				} else {
+					clear();
+					refresh();
+					attron(A_REVERSE);
+					mvaddstr(3, 0, "^X");
+					attroff(A_REVERSE);
+					addstr(" Exit prompt");
+					if (error_state != NONE) {
+						if (has_colors()) attron(COLOR_PAIR(1));
+						if (error_state == INVALID) mvaddstr(1, 0, "Note already exists");
+						if (error_state == EMPTY) mvaddstr(1, 0, "Name can't be empty");
+						if (has_colors()) attroff(COLOR_PAIR(1));
+					}
+					mvaddstr(0, 0, "Note name: ");
+					int row_width = getmaxx(stdscr)-12;
+					print_row_scroll(note_name, add_pos, add_scroll, row_width);
+					int add_ch = getch();
+					error_state = NONE;
+					if (add_ch == '\n' || add_ch == KEY_ENTER) {
+						if (is_str_not_in_arr(files, note_name, filesc) && strlen(note_name) > 0) {
+							rename(*(files + cursor_pos + shift), note_name);
+							*(files + cursor_pos + shift) = note_name;
+							break;
+						}
+					} else if (add_ch == KEY_LEFT) {
+						if (add_scroll + add_pos != 0) {
+							if (add_pos == 0) add_scroll--;
+							else add_pos--;
+						}
+					} else if (add_ch == KEY_RIGHT) {
+						if (add_scroll + add_pos != strlen(note_name)) {
+							if (add_pos == row_width-1) add_scroll++;
+							else add_pos++;
+						}
+					} else if (add_ch == KEY_BACKSPACE || add_ch == KEY_DC || add_ch == 127) {
+						if (add_scroll + add_pos != 0) {
+							note_name = delete_ch_pos(note_name, add_scroll + add_pos);
+							if (add_pos == 0) add_scroll--;
+							else add_pos--;
+						}
+					} else if (add_ch == 24) {
+						break;
+					} else if (add_ch < KEY_MIN && old_add_ch != KEY_RESIZE) {
+						note_name = insert_ch_pos(note_name, add_ch, add_scroll + add_pos);
+						if (add_pos == row_width-1) add_scroll++;
+						else add_pos++;
+					}
+					old_add_ch = add_ch;
+					if (!is_str_not_in_arr(files, note_name, filesc)) error_state = INVALID;
+					if (strlen(note_name) == 0) error_state = EMPTY;
 				}
 			}
 			sidebar = init_sidebar();
