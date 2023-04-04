@@ -325,8 +325,8 @@ int main() {
 		clear();
 		if (focus_change) {
 			focus_change = false;
-			if (focus == EDITOR) shortcut_descriptions[1] = "Exits editor";
-			else shortcut_descriptions[1] = "Exits terminote";
+			if (focus == EDITOR) shortcut_descriptions[2] = "Exits editor";
+			else shortcut_descriptions[2] = "Exits terminote";
 		}
 		curs_set(0);
 		if (draw_options_row(options, shortcut_keys, shortcut_descriptions, shortcuts, 1) != 0) {
